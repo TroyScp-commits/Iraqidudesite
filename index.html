@@ -3,37 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iraqidude | The Dragon Vault</title>
+    <title>IRAQIDUDE | THE DRAGON VAULT</title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&family=Cairo:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
 
     <style>
-        :root { --gold: #d4af37; --bg: #030303; --card: #0d0d0d; --tg: #0088cc; }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
-        body { background: var(--bg); color: #fff; overflow-x: hidden; text-align: right; }
+        :root { --gold: #d4af37; --dark-bg: #050505; --card-bg: #0d0d0d; --text: #e0e0e0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background-color: var(--dark-bg); color: var(--text); font-family: 'Cairo', sans-serif; 
+            overflow-x: hidden; background-image: radial-gradient(circle at center, #1a1a1a 0%, #050505 100%);
+        }
 
-        /* الهيدر */
+        /* شريط إعلان القناة */
+        .channel-ad {
+            background: linear-gradient(90deg, #000, var(--gold), #000);
+            color: black; padding: 10px 0; font-weight: bold; text-align: center;
+            font-size: 0.9rem; border-bottom: 2px solid #fff; overflow: hidden;
+        }
+
         nav {
-            padding: 1.2rem 8%; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px);
+            background: rgba(0, 0, 0, 0.9); padding: 15px 5%;
             display: flex; justify-content: space-between; align-items: center;
             border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 1000;
         }
-        .logo { font-family: 'Orbitron'; font-size: 1.5rem; color: var(--gold); font-weight: 900; text-decoration: none; letter-spacing: 2px; }
+        .logo { font-family: 'Orbitron'; font-size: 1.8rem; color: var(--gold); text-shadow: 0 0 10px var(--gold); }
 
-        .container { width: 92%; max-width: 1200px; margin: 0 auto; padding: 2rem 0; }
+        .container { width: 95%; max-width: 1200px; margin: 20px auto; }
 
-        /* شاشة الترحيب */
-        #welcomeOverlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
-            backdrop-filter: blur(10px); z-index: 9999; display: flex; 
-            justify-content: center; align-items: center; padding: 20px;
+        /* النافذة المنبثقة العصرية */
+        #welcomePopup {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: flex; justify-content: center; align-items: center; z-index: 5000;
         }
-        .welcome-card {
-            background: #0a0a0a; border: 1px solid var(--gold); 
+        .popup-box {
+            background: var(--card-bg); padding: 30px; border-radius: 20px;
+            border: 2px solid var(--gold); text-align: center; width: 85%; max-width: 400px;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.3); animation: scaleUp 0.4s ease;
+        }
+
+        .card {
+            background: var(--card-bg); border-radius: 15px; border: 1px solid #222;
+            overflow: hidden; transition: 0.3s; margin-bottom: 20px;
+        }
+        .btn {
+            padding: 12px; border-radius: 8px; cursor: pointer; font-weight: bold;
+            display: block; width: 100%; text-align: center; border: none; text-decoration: none;
+        }
+        .btn-gold { background: var(--gold); color: black; }
+        
+        #adminPanel {
+            background: #111; border: 1px dashed var(--gold); padding: 20px;
+            margin-bottom: 30px; border-radius: 15px; display: none;
+        }
+        .input-group { margin-bottom: 10px; }
+        .field { width: 100%; padding: 12px; background: #000; color: #fff; border: 1px solid #333; border-radius: 8px; }
+
+        @keyframes scaleUp { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <div class="channel-ad">
+        <marquee scrollamount="8">🔥 اشترك في قناة IRAQIDUDE للحصول على أقوى سكربتات Game Guardian الحصرية! 🔥</marquee>
+    </div>
+
+    <nav>
+        <div class="logo">IRAQIDUDE</div>
+        <button class="btn btn-gold" style="width:auto; padding: 5px 15px;" onclick="showLogin()">Login</button>
+    </nav>
+
+    <div id="welcomePopup">
+        <div class="popup-box">
+            <h2 style="color:var(--gold); font-family:'Orbitron';">WELCOME TO THE VAULT</h2>
+            <p style="margin: 20px 0; line-height: 1.6;">أهلاً بك في مستودع التنين. هنا تجد أفضل سكربتات Lua المعدلة باحترافية.</p>
+            <button class="btn btn-gold" onclick="closePopup()">دخول المستودع</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="adminPanel">
+            <h3 style="color:var(--gold); margin-bottom:15px;">لوحة الإدارة 🔥</h3>
+            <input type="text" id="title" class="field input-group" placeholder="اسم السكربت">
+            <input type="text" id="img" class="field input-group" placeholder="رابط الصورة">
+            <input type="text" id="link" class="field input-group" placeholder="رابط التحميل">
+            <button class="btn btn-gold" onclick="addScript()">نشر السكربت</button>
+        </div>
+
+        <div id="container" class="grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+            </div>
+    </div>
+
+    <div id="loginModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.9); z-index:6000; justify-content:center; align-items:center;">
+        <div style="background:#0d0d0d; padding:30px; border-radius:15px; border:1px solid var(--gold); width:300px; text-align:center;">
+            <input type="text" id="user" class="field input-group" placeholder="Username">
+            <input type="password" id="pass" class="field input-group" placeholder="Password">
+            <button class="btn btn-gold" onclick="login()">دخول</button>
+            <p onclick="document.getElementById('loginModal').style.display='none'" style="color:grey; margin-top:10px; cursor:pointer;">إغلاق</p>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXB-_vUs8h15LeQcxbU0mLEjlfOlENz1E", //
+            authDomain: "iraqidude-vault.firebaseapp.com",
+            projectId: "iraqidude-vault", //
+            storageBucket: "iraqidude-vault.firebasestorage.app",
+            messagingSenderId: "1047249902784", //
+            appId: "1:1047249902784:web:30a11a2aa94f1101856125"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        function closePopup() { document.getElementById('welcomePopup').style.display = 'none'; }
+        function showLogin() { document.getElementById('loginModal').style.display = 'flex'; }
+
+        function login() {
+            if(document.getElementById('user').value === "Ayman" && document.getElementById('pass').value === "AYEMN4444") {
+                sessionStorage.setItem('isAyman', 'true');
+                location.reload();
+            } else { alert("خطأ!"); }
+        }
+
+        if(sessionStorage.getItem('isAyman') === 'true') {
+            document.getElementById('adminPanel').style.display = 'block';
+        }
+
+        async function addScript() {
+            const t = document.getElementById('title').value;
+            const i = document.getElementById('img').value;
+            const l = document.getElementById('link').value;
+            if(!t || !l) return alert("املاً البيانات");
+            await db.collection("scripts").add({
+                title: t, img: i || 'https://via.placeholder.com/400x200/000/d4af37', 
+                link: l, time: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            location.reload();
+        }
+
+        db.collection("scripts").orderBy("time", "desc").onSnapshot(snap => {
+            const cont = document.getElementById('container');
+            cont.innerHTML = "";
+            snap.forEach(doc => {
+                const s = doc.data();
+                cont.innerHTML += `
+                    <div class="card">
+                        <img src="${s.img}" style="width:100%; height:150px; object-fit:cover;">
+                        <div style="padding:15px;">
+                            <h4 style="color:var(--gold); margin-bottom:10px;">${s.title}</h4>
+                            <a href="${s.link}" target="_blank" class="btn btn-gold">DOWNLOAD</a>
+                        </div>
+                    </div>`;
+            });
+        });
+    </script>
+</body>
+</html>
             padding: 3rem; border-radius: 25px; max-width: 500px; text-align: center;
             box-shadow: 0 0 50px rgba(212, 175, 55, 0.1);
         }
