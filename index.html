@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iraqidude | The Dragon Vault</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        :root { --gold: #d4af37; --bg: #030303; --card: #0d0d0d; --tg: #0088cc; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: var(--bg); color: #fff; overflow-x: hidden; text-align: right; }
+
+        /* الهيدر */
+        nav {
+            padding: 1.2rem 8%; background: rgba(0,0,0,0.95); backdrop-filter: blur(15px);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 1000;
+        }
+        .logo { font-family: 'Orbitron'; font-size: 1.5rem; color: var(--gold); font-weight: 900; text-decoration: none; letter-spacing: 2px; }
+
+        .container { width: 92%; max-width: 1200px; margin: 0 auto; padding: 2rem 0; }
+
+        /* شاشة الترحيب */
+        #welcomeOverlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.95); 
+            backdrop-filter: blur(10px); z-index: 9999; display: flex; 
+            justify-content: center; align-items: center; padding: 20px;
+        }
+        .welcome-card {
+            background: #0a0a0a; border: 1px solid var(--gold); 
+            padding: 3rem; border-radius: 25px; max-width: 500px; text-align: center;
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.1);
+        }
+
+        /* الشبكة والبطاقات */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 25px; }
+        .card { background: var(--card); border-radius: 15px; border: 1px solid rgba(255,255,255,0.05); transition: 0.4s; overflow: hidden; position: relative; }
+        .card:hover { border-color: var(--gold); transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .btn { padding: 12px 20px; border-radius: 8px; border: none; font-family: 'Orbitron'; cursor: pointer; transition: 0.3s; text-decoration: none; font-weight: 900; text-align: center; display: inline-block; }
+        .btn-gold { background: var(--gold); color: #000; width: 100%; }
+        .btn-gold:hover { background: #fff; transform: scale(1.02); }
+
+        /* النوافذ المنبثقة */
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.98); display: none; justify-content: center; align-items: center; z-index: 2000; }
+        .field { width: 100%; padding: 14px; background: #111; border: 1px solid #222; color: #fff; border-radius: 8px; margin-bottom: 15px; outline: none; text-align: center; font-size: 1rem; }
+        .field:focus { border-color: var(--gold); }
+    </style>
+</head>
+<body>
+
+    <div id="welcomeOverlay">
+        <div class="welcome-card">
+            <h1 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:20px; font-size: 2rem;">IRAQIDUDE</h1>
+            <p style="color: #ccc; line-height: 1.6;">مرحباً بك في المستودع السري الخاص بسكربتات التنين المتقدمة.</p>
+            <button class="btn btn-gold" style="width:200px; margin-top:30px;" onclick="document.getElementById('welcomeOverlay').style.display='none'">دخول النظام</button>
+        </div>
+    </div>
+
+    <nav>
+        <a href="#" class="logo">IRAQIDUDE</a>
+        <div id="authBtnArea">
+            <button class="btn btn-gold" style="width:auto; padding:8px 20px; font-size: 0.8rem;" onclick="openAuth()">ADMIN LOGIN</button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="adminPanel" style="background:#0a0a0a; border:2px solid var(--gold); padding:2rem; border-radius:20px; margin-bottom:3rem; display:none;">
+            <h3 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:1.5rem; text-align: center;">نشر سكربت جديد 🐉</h3>
+            <input type="text" id="sTitle" class="field" placeholder="عنوان السكربت (مثلاً: Fly Script)">
+            <input type="text" id="sImg" class="field" placeholder="رابط صورة السكربت">
+            <input type="text" id="sLink" class="field" placeholder="رابط التحميل المباشر">
+            <button class="btn btn-gold" onclick="publishScript()">إرسال إلى المستودع</button>
+        </div>
+
+        <h2 style="font-family:'Orbitron'; margin-bottom:2rem; color:var(--gold); border-right: 4px solid var(--gold); padding-right: 15px;">SCRIPTS REPOSITORY</h2>
+        
+        <div class="grid" id="scriptGrid">
+            </div>
+    </div>
+
+    <div id="authModal" class="modal">
+        <div style="background:#0a0a0a; padding:2.5rem; border-radius:20px; border:1px solid var(--gold); width:90%; max-width:400px; box-shadow: 0 0 40px rgba(212,175,55,0.2);">
+            <h2 style="font-family:'Orbitron'; color:var(--gold); margin-bottom:2rem; text-align:center;">إثبات الهوية</h2>
+            <input type="text" id="userIn" class="field" placeholder="اسم المستخدم">
+            <input type="password" id="passIn" class="field" placeholder="كلمة السر">
+            <button class="btn btn-gold" onclick="verifyAccess()">دخول المسؤول</button>
+            <p onclick="closeAuth()" style="text-align:center; margin-top:20px; font-size:0.8rem; color:#666; cursor:pointer;">إغلاق النافذة</p>
+        </div>
+    </div>
+
+    <script>
+        // --- إعدادات Firebase الخاصة بك (من الصورة) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBXB-_vUs8h15LeQcxbU0mLEjlfOlENz1E",
+            authDomain: "iraqidude-vault.firebaseapp.com",
+            projectId: "iraqidude-vault",
+            storageBucket: "iraqidude-vault.firebasestorage.app",
+            messagingSenderId: "1047249902784",
+            appId: "1:1047249902784:web:30a11a2aa94f1101856125"
+        };
+
+        // تشغيل فايربيس
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // التحقق من الجلسة
+        let isAuthorized = sessionStorage.getItem('isAymanAdmin') === 'true';
+
+        function openAuth() { document.getElementById('authModal').style.display = 'flex'; }
+        function closeAuth() { document.getElementById('authModal').style.display = 'none'; }
+
+        // نظام التحقق المطور
+        function verifyAccess() {
+            const user = document.getElementById('userIn').value;
+            const pass = document.getElementById('passIn').value;
+
+            if(user === "Ayman" && pass === "AYEMN4444") {
+                sessionStorage.setItem('isAymanAdmin', 'true');
+                alert("أهلاً بك يا أيمن، تم تفعيل صلاحيات الإدارة.");
+                location.reload();
+            } else {
+                alert("بيانات خاطئة! دخول غير مصرح به.");
+            }
+        }
+
+        // وظيفة النشر
+        async function publishScript() {
+            const title = document.getElementById('sTitle').value;
+            const link = document.getElementById('sLink').value;
+            const img = document.getElementById('sImg').value;
+
+            if(!title || !link) return alert("الرجاء إدخال الاسم والرابط على الأقل!");
+
+            try {
+                await db.collection("scripts").add({
+                    title: title,
+                    link: link,
+                    img: img || 'https://via.placeholder.com/400x200/0d0d0d/d4af37?text=IRAQIDUDE+LUA',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                alert("تم رفع السكربت بنجاح!");
+                location.reload();
+            } catch(error) {
+                console.error(error);
+                alert("خطأ: تأكد من ضبط الـ Rules في فايربيس على allow read, write: if true");
+            }
+        }
+
+        // جلب السكربتات وعرضها
+        db.collection("scripts").orderBy("createdAt", "desc").onSnapshot(snap => {
+            const grid = document.getElementById('scriptGrid');
+            grid.innerHTML = "";
+            snap.forEach(doc => {
+                const s = doc.data();
+                grid.innerHTML += `
+                    <div class="card">
+                        <img src="${s.img}" style="width:100%; height:180px; object-fit:cover; border-bottom:1px solid #222;">
+                        <div style="padding:1.5rem;">
+                            <h3 style="font-family:'Orbitron'; font-size:1rem; margin-bottom:1.5rem; color:#fff;">${s.title}</h3>
+                            <button onclick="window.open('${s.link}', '_blank')" class="btn btn-gold">تحميل السكربت</button>
+                            ${isAuthorized ? `<button onclick="deleteScript('${doc.id}')" style="background:none; border:none; color:#ff4757; cursor:pointer; margin-top:15px; display:block; width:100%; font-size:0.8rem;">حذف السكربت <i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`;
+            });
+        });
+
+        // وظيفة الحذف للأدمن
+        async function deleteScript(id) {
+            if(confirm("هل أنت متأكد من حذف هذا السكربت؟")) {
+                await db.collection("scripts").doc(id).delete();
+            }
+        }
+
+        // تفعيل لوحة الأدمن إذا كان مسجلاً
+        if(isAuthorized) {
+            document.getElementById('adminPanel').style.display = 'block';
+            document.getElementById('authBtnArea').innerHTML = `
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="color:var(--gold); font-size:0.8rem; font-weight:bold;">أيمن (مسؤول)</span>
+                    <i class="fas fa-power-off" onclick="sessionStorage.clear(); location.reload();" style="color:red; cursor:pointer;"></i>
+                </div>`;
+        }
+    </script>
+</body>
+</html>
